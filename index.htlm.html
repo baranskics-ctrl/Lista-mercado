@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0c0c0c"/>
+<title>Lista de Mercado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Nunito:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;background:#0c0c0c;overscroll-behavior:none;}
+  body{font-family:'Nunito',sans-serif;color:#e0e0e0;overflow-x:hidden;}
+  input,select,button{font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;}
+  input:focus,select:focus{outline:none;border-color:#c8f000!important;}
+  button{cursor:pointer;border:none;}
+  ::-webkit-scrollbar{width:3px;}
+  ::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:4px;}
+
+  /* Layout */
+  #app{max-width:600px;margin:0 auto;padding:16px 14px 140px;min-height:100vh;}
+
+  /* Floating total bar (shop mode) */
+  .float-total{position:fixed;bottom:0;left:0;right:0;z-index:99;background:rgba(14,14,14,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid #1e1e1e;padding:12px 20px 20px;max-width:600px;margin:0 auto;}
+  .float-total-inner{max-width:600px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .float-total-left{display:flex;flex-direction:column;gap:2px;}
+  .float-total-label{font-size:10px;letter-spacing:2px;color:#555;text-transform:uppercase;}
+  .float-total-sub{font-size:12px;color:#444;}
+  .float-total-amt{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#4cd870;line-height:1;}
+  .float-progress-mini{height:3px;background:#1a1a1a;border-radius:3px;overflow:hidden;margin-top:4px;width:100px;}
+  .float-progress-mini-bar{height:100%;background:linear-gradient(90deg,#4cd870,#a8f04a);border-radius:3px;transition:width .4s ease;}
+
+  /* Mode bar */
+  .mode-bar{display:flex;gap:6px;background:#141414;border-radius:10px;padding:4px;margin-bottom:20px;}
+  .mode-btn{flex:1;text-align:center;padding:9px 0;border-radius:7px;font-size:13px;font-weight:600;font-family:'Syne',sans-serif;background:transparent;color:#555;transition:all .2s;}
+  .mode-btn.active-plan{background:#1e1e1e;color:#c8f000;box-shadow:0 2px 8px rgba(0,0,0,.4);}
+  .mode-btn.active-shop{background:#1e2e1e;color:#4cd870;box-shadow:0 2px 8px rgba(0,0,0,.4);}
+
+  /* Typography */
+  .page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#f0f0f0;letter-spacing:-0.5px;}
+  .page-hint{color:#555;font-size:13px;margin-top:4px;margin-bottom:18px;}
+
+  /* Cards */
+  .card{background:#141414;border:1px solid #1e1e1e;border-radius:12px;overflow:hidden;margin-bottom:10px;}
+
+  /* Form */
+  .form-wrap{padding:12px;display:flex;flex-direction:column;gap:8px;}
+  .form-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .inp{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#f0f0f0;padding:10px 11px;font-size:14px;font-family:'Nunito',sans-serif;transition:border-color .2s;width:100%;}
+  .inp-name{flex:1;min-width:150px;}
+  .inp-qty{width:72px;flex-shrink:0;}
+  .inp-unit{width:72px;flex-shrink:0;}
+  .inp-cat{flex:1;min-width:140px;}
+  .inp-price{width:100px;flex-shrink:0;}
+  .add-btn{background:#c8f000;color:#0c0c0c;border-radius:8px;padding:10px 18px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;transition:all .15s;white-space:nowrap;width:100%;}
+  .add-btn:active{background:#d9ff00;transform:scale(.98);}
+
+  /* Plan list */
+  .plan-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid #1e1e1e;transition:background .15s;}
+  .plan-row:first-child{border-top:none;}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .plan-name{flex:1;font-size:14px;color:#ddd;}
+  .plan-badge{font-size:12px;color:#888;background:#1a1a1a;border-radius:6px;padding:2px 8px;white-space:nowrap;}
+  .plan-cat{font-size:14px;flex-shrink:0;}
+  .del-btn{background:transparent;color:#e05252;font-size:14px;padding:4px 6px;border-radius:6px;flex-shrink:0;}
+  .del-btn:active{background:rgba(224,82,82,.1);}
+  .count-row{padding:8px 14px;font-size:12px;color:#444;border-top:1px solid #1a1a1a;}
+
+  /* Empty */
+  .empty{text-align:center;padding:40px 0;color:#444;font-size:14px;line-height:2.2;}
+  .empty span{font-size:36px;display:block;}
+
+  /* Go button */
+  .go-btn{display:block;width:100%;background:#c8f000;color:#0c0c0c;border-radius:12px;padding:15px 0;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;transition:all .2s;box-shadow:0 4px 16px rgba(200,240,0,.15);margin-top:6px;}
+  .go-btn:active{background:#d9ff00;transform:scale(.99);}
+
+  /* Shop mode */
+  .progress-wrap{height:6px;background:#1a1a1a;border-radius:6px;overflow:hidden;margin-bottom:8px;}
+  .progress-bar{height:100%;background:linear-gradient(90deg,#4cd870,#a8f04a);border-radius:6px;transition:width .4s ease;}
+  .shop-stats{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .stat-label{font-size:13px;color:#666;}
+  .stat-total{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#4cd870;}
+
+  .section-label{font-size:11px;letter-spacing:2px;color:#555;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+  .extra-toggle{background:transparent;color:#666;font-size:11px;font-family:'Nunito',sans-serif;letter-spacing:1px;padding:4px 8px;border-radius:6px;transition:color .15s;}
+  .extra-toggle:active{color:#c8f000;}
+
+  .shop-row{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-top:1px solid #1a1a1a;transition:background .15s;}
+  .shop-row:first-child{border-top:none;}
+  .check-btn{width:30px;height:30px;border-radius:8px;background:#1e1e1e;border:1px solid #333;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:700;color:#0f0f0f;transition:all .2s;margin-top:1px;}
+  .check-btn.checked{background:#4cd870;border-color:transparent;}
+  .check-btn:active{transform:scale(.9);}
+  .shop-info{flex:1;min-width:0;}
+  .shop-name{display:block;font-size:14px;color:#e0e0e0;transition:all .2s;}
+  .shop-name.done{text-decoration:line-through;color:#555;}
+  .shop-plan-lbl{display:block;font-size:11px;color:#555;margin-top:2px;}
+  .shop-inputs{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .input-group{display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .input-lbl{font-size:9px;color:#555;letter-spacing:1px;text-transform:uppercase;}
+  .small-inp{background:#1a1a1a;border:1px solid #252525;border-radius:6px;color:#f0f0f0;padding:6px 8px;font-size:13px;font-family:'Nunito',sans-serif;width:80px;text-align:center;}
+  .small-inp:focus{outline:none;border-color:#c8f000;}
+  .shop-sub{font-size:13px;font-weight:700;color:#4cd870;font-family:'Syne',sans-serif;min-width:70px;text-align:right;}
+
+  /* Shop row with inputs stacked nicely on mobile */
+  .shop-row-inner{flex:1;min-width:0;}
+  .shop-row-top{display:flex;align-items:center;gap:10px;}
+  .bought-fields{display:flex;align-items:center;gap:8px;margin-top:8px;padding-left:40px;}
+
+  /* Total card */
+  .total-card{background:#141414;border:1px solid #1e1e1e;border-radius:12px;padding:16px 18px;margin-top:16px;margin-bottom:10px;}
+  .total-line{display:flex;justify-content:space-between;align-items:center;padding:5px 0;}
+  .total-lbl{font-size:13px;color:#666;}
+  .total-amt{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#aaa;}
+  .total-divider{border:none;border-top:1px solid #252525;margin:8px 0;}
+  .total-final-lbl{font-size:15px;color:#f0f0f0;font-weight:700;}
+  .total-final-amt{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;color:#4cd870;}
+
+  .back-btn{background:transparent;color:#555;font-size:13px;font-family:'Nunito',sans-serif;padding:8px 0;transition:color .15s;}
+  .back-btn:active{color:#ccc;}
+
+  /* Extra item row accent */
+  .extra-row{background:rgba(255,200,50,.03);}
+  .extra-tag{font-size:9px;background:rgba(255,200,50,.15);color:#e0c34a;border-radius:4px;padding:1px 5px;letter-spacing:.5px;text-transform:uppercase;margin-left:6px;vertical-align:middle;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const fmt = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const parseNum = v => parseFloat(String(v||'').replace(',','.')) || 0;
+const CATS = ['🥩 Carnes','🥦 Hortifruti','🥛 Laticínios','🍞 Padaria','🧴 Higiene','🧹 Limpeza','🥫 Mercearia','❓ Outros'];
+const CAT_COLOR = {'🥩 Carnes':'#e05252','🥦 Hortifruti':'#52c97a','🥛 Laticínios':'#52aaee','🍞 Padaria':'#e0954a','🧴 Higiene':'#b06fe0','🧹 Limpeza':'#4ac9b0','🥫 Mercearia':'#e0c34a','❓ Outros':'#888'};
+const UNITS = ['un','kg','g','L','ml','cx','pct','dz'];
+
+let state = {
+  mode: 'plan',
+  items: [],
+  showExtraForm: false
+};
+
+function setState(patch) {
+  Object.assign(state, typeof patch === 'function' ? patch(state) : patch);
+  render();
+}
+
+// ─── HELPERS ────────────────────────────────────────────────
+function el(tag, attrs={}, ...children) {
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c == null || c === false) continue;
+    e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return e;
+}
+
+function inp(attrs={}) { return el('input', attrs); }
+function sel(opts, value, onChange, cls='inp') {
+  const s = el('select', {class: cls});
+  s.value = value;
+  opts.forEach(o => {
+    const op = el('option'); op.value = o; op.textContent = o;
+    if (o === value) op.selected = true;
+    s.appendChild(op);
+  });
+  s.addEventListener('change', e => onChange(e.target.value));
+  return s;
+}
+
+function modeBar() {
+  const bar = el('div', {class:'mode-bar'});
+  const planBtn = el('button', {
+    class: 'mode-btn' + (state.mode==='plan' ? ' active-plan':''),
+    onClick: () => setState({mode:'plan'})
+  }, '📋 Planejando');
+  const shopBtn = el('button', {
+    class: 'mode-btn' + (state.mode==='shop' ? ' active-shop':''),
+    onClick: () => { if(state.items.filter(i=>!i.extra).length > 0) setState({mode:'shop'}); }
+  }, '🛒 No Mercado');
+  if (state.mode==='plan' && state.items.filter(i=>!i.extra).length===0) shopBtn.style.opacity='0.35';
+  bar.append(planBtn, shopBtn);
+  return bar;
+}
+
+// ─── PLAN MODE ────────────────────────────────────────────────
+function planMode() {
+  const wrap = el('div');
+
+  // Header
+  wrap.append(
+    modeBar(),
+    el('h1', {class:'page-title'}, 'Minha Lista'),
+    el('p', {class:'page-hint'}, 'Monte sua lista em casa antes de sair.')
+  );
+
+  // Add form
+  let fname='', fqty='1', funit=UNITS[0], fcat=CATS[7];
+
+  const nameInp = inp({class:'inp inp-name', placeholder:'Nome do produto...', value:fname, type:'text'});
+  const qtyInp  = inp({class:'inp inp-qty',  placeholder:'Qtd', value:fqty, type:'text', inputmode:'decimal'});
+  const unitSel = sel(UNITS, funit, v => funit = v, 'inp inp-unit');
+  const catSel  = sel(CATS,  fcat,  v => fcat  = v, 'inp inp-cat');
+
+  nameInp.addEventListener('input', e => fname = e.target.value);
+  qtyInp.addEventListener('input',  e => fqty  = e.target.value);
+
+  const addItem = () => {
+    const n = nameInp.value.trim();
+    if (!n) { nameInp.focus(); return; }
+    const q = parseNum(qtyInp.value) || 1;
+    setState(s => ({
+      items: [...s.items, {
+        id: Date.now(), name: n,
+        plannedQty: q, unit: funit, cat: fcat,
+        bought: false, boughtQty: '', boughtPrice: '', extra: false
+      }]
+    }));
+    nameInp.value = ''; qtyInp.value = '1'; fname=''; fqty='1';
+    nameInp.focus();
+  };
+
+  nameInp.addEventListener('keydown', e => e.key==='Enter' && addItem());
+  qtyInp.addEventListener('keydown',  e => e.key==='Enter' && addItem());
+
+  const addBtn = el('button', {class:'add-btn', onClick: addItem}, '+ Adicionar');
+
+  const formCard = el('div', {class:'card'},
+    el('div', {class:'form-wrap'},
+      el('div', {class:'form-row'}, nameInp),
+      el('div', {class:'form-row'}, qtyInp, unitSel, catSel),
+      el('div', {class:'form-row'}, addBtn)
+    )
+  );
+  wrap.append(formCard);
+
+  // List
+  const planned = state.items.filter(i => !i.extra);
+  if (planned.length === 0) {
+    wrap.append(el('div', {class:'empty'}, el('span',{},'🛍️'), 'Lista vazia — adicione produtos acima'));
+  } else {
+    const listCard = el('div', {class:'card'});
+    planned.forEach(it => {
+      const row = el('div', {class:'plan-row'});
+      const dot = el('span', {class:'dot'});
+      dot.style.background = CAT_COLOR[it.cat] || '#888';
+      const delBtn = el('button', {class:'del-btn',
+        onClick: () => setState(s => ({items: s.items.filter(i => i.id !== it.id)}))
+      }, '✕');
+      row.append(
+        dot,
+        el('span', {class:'plan-name'}, it.name),
+        el('span', {class:'plan-badge'}, `${it.plannedQty} ${it.unit}`),
+        el('span', {class:'plan-cat'}, it.cat.split(' ')[0]),
+        delBtn
+      );
+      listCard.append(row);
+    });
+    listCard.append(el('div', {class:'count-row'}, `${planned.length} ${planned.length===1?'item':'itens'} na lista`));
+    wrap.append(listCard);
+
+    const goBtn = el('button', {class:'go-btn', onClick: () => setState({mode:'shop'})}, 'Ir às compras →');
+    wrap.append(goBtn);
+  }
+
+  return wrap;
+}
+
+// ─── SHOP MODE ────────────────────────────────────────────────
+function shopMode() {
+  const wrap = el('div');
+  wrap.append(modeBar());
+
+  const planned = state.items.filter(i => !i.extra);
+  const extras  = state.items.filter(i => i.extra);
+  const bought  = state.items.filter(i => i.bought);
+  const total   = bought.reduce((s,i) => s+(parseNum(i.boughtQty))*(parseNum(i.boughtPrice)), 0);
+  const progress = planned.length ? Math.round(planned.filter(i=>i.bought).length/planned.length*100) : 0;
+
+  // Progress
+  const bar = el('div', {class:'progress-bar'});
+  bar.style.width = progress + '%';
+  wrap.append(
+    el('div', {class:'progress-wrap'}, bar),
+    el('div', {class:'shop-stats'},
+      el('span', {class:'stat-label'}, `${planned.filter(i=>i.bought).length}/${planned.length} itens`),
+      el('span', {class:'stat-total'}, fmt(total))
+    )
+  );
+
+  // Planned items
+  wrap.append(el('div', {class:'section-label'}, 'Lista planejada'));
+  const planCard = el('div', {class:'card'});
+
+  planned.forEach(it => {
+    const row = el('div', {class:'shop-row'});
+    if (it.bought) row.style.background = 'rgba(100,220,120,0.04)';
+
+    const checkBtn = el('button', {class: 'check-btn' + (it.bought?' checked':''),
+      onClick: () => {
+        setState(s => ({
+          items: s.items.map(i => i.id===it.id ? {
+            ...i,
+            bought: !i.bought,
+            boughtQty: !i.bought && !i.boughtQty ? String(i.plannedQty) : i.boughtQty
+          } : i)
+        }));
+      }
+    }, it.bought ? '✓' : '');
+
+    const nameSpan = el('span', {class:'shop-name'+(it.bought?' done':'')}, it.name);
+    const planLbl  = el('span', {class:'shop-plan-lbl'}, `${it.plannedQty} ${it.unit} · ${it.cat.split(' ')[0]}`);
+    const info = el('div', {class:'shop-info'}, nameSpan, planLbl);
+
+    const rowTop = el('div', {class:'shop-row-top'}, checkBtn, info);
+    const inner  = el('div', {class:'shop-row-inner'}, rowTop);
+
+    if (it.bought) {
+      const qtyI  = inp({class:'small-inp', type:'text', inputmode:'decimal', value:it.boughtQty, placeholder:'qtd'});
+      const priceI= inp({class:'small-inp', type:'text', inputmode:'decimal', value:it.boughtPrice, placeholder:'0,00'});
+
+      const subTotal = () => {
+        const v = parseNum(qtyI.value)*parseNum(priceI.value);
+        return v > 0 ? fmt(v) : '—';
+      };
+      const subSpan = el('span', {class:'shop-sub'}, subTotal());
+
+      const update = () => {
+        setState(s => ({
+          items: s.items.map(i => i.id===it.id
+            ? {...i, boughtQty: qtyI.value, boughtPrice: priceI.value}
+            : i)
+        }));
+      };
+      qtyI.addEventListener('input', update);
+      priceI.addEventListener('input', update);
+
+      const qGrp = el('div', {class:'input-group'}, el('span',{class:'input-lbl'},'Qtd'), qtyI);
+      const pGrp = el('div', {class:'input-group'}, el('span',{class:'input-lbl'},'R$/un'), priceI);
+
+      const fields = el('div', {class:'bought-fields'}, qGrp, pGrp, subSpan);
+      inner.append(fields);
+    }
+
+    row.append(inner);
+    planCard.append(row);
+  });
+
+  wrap.append(planCard);
+
+  // Extras section
+  const extraLabel = el('div', {class:'section-label'});
+  extraLabel.style.marginTop = '16px';
+  const extraLblText = document.createTextNode('Fora da lista');
+  const toggleBtn = el('button', {class:'extra-toggle',
+    onClick: () => setState(s => ({showExtraForm: !s.showExtraForm}))
+  }, state.showExtraForm ? '✕ Cancelar' : '+ Adicionar');
+  extraLabel.append(extraLblText, toggleBtn);
+  wrap.append(extraLabel);
+
+  // Extra add form
+  if (state.showExtraForm) {
+    let eName='', eQty='1', eUnit=UNITS[0], ePrice='', eCat=CATS[7];
+    const eNameI  = inp({class:'inp inp-name', placeholder:'Produto...', type:'text'});
+    const eQtyI   = inp({class:'inp inp-qty',  placeholder:'Qtd', value:'1', type:'text', inputmode:'decimal'});
+    const eUnitS  = sel(UNITS, eUnit, v=>eUnit=v, 'inp inp-unit');
+    const ePriceI = inp({class:'inp inp-price', placeholder:'R$ preço', type:'text', inputmode:'decimal'});
+    const eCatS   = sel(CATS, eCat, v=>eCat=v, 'inp inp-cat');
+
+    eNameI.addEventListener('input',  e => eName  = e.target.value);
+    eQtyI.addEventListener('input',   e => eQty   = e.target.value);
+    ePriceI.addEventListener('input', e => ePrice = e.target.value);
+
+    const addExtra = () => {
+      const n = eNameI.value.trim();
+      if (!n || !ePriceI.value) { if(!n) eNameI.focus(); else ePriceI.focus(); return; }
+      setState(s => ({
+        showExtraForm: false,
+        items: [...s.items, {
+          id: Date.now(), name: n,
+          plannedQty: parseNum(eQtyI.value)||1, unit: eUnit, cat: eCat,
+          bought: true, boughtQty: eQtyI.value, boughtPrice: ePriceI.value, extra: true
+        }]
+      }));
+    };
+
+    const addExtraBtn = el('button', {class:'add-btn', onClick: addExtra}, '+ Adicionar');
+    wrap.append(el('div', {class:'card'},
+      el('div', {class:'form-wrap'},
+        el('div', {class:'form-row'}, eNameI),
+        el('div', {class:'form-row'}, eQtyI, eUnitS, eCatS),
+        el('div', {class:'form-row'}, ePriceI, addExtraBtn)
+      )
+    ));
+  }
+
+  // Extra items list
+  if (extras.length > 0) {
+    const extraCard = el('div', {class:'card'});
+    extras.forEach(it => {
+      const row = el('div', {class:'shop-row extra-row'});
+      const dot = el('span', {class:'dot'}); dot.style.background = CAT_COLOR[it.cat]||'#888';
+      dot.style.marginTop = '4px'; dot.style.flexShrink = '0';
+
+      const nameSpan = el('span', {class:'shop-name'},
+        it.name, el('span', {class:'extra-tag'}, 'extra')
+      );
+      const planLbl  = el('span', {class:'shop-plan-lbl'}, `${it.cat.split(' ')[0]}`);
+      const info     = el('div', {class:'shop-info'}, nameSpan, planLbl);
+
+      const qtyI   = inp({class:'small-inp', type:'text', inputmode:'decimal', value:it.boughtQty});
+      const priceI = inp({class:'small-inp', type:'text', inputmode:'decimal', value:it.boughtPrice});
+      const subSpan= el('span', {class:'shop-sub'}, fmt(parseNum(it.boughtQty)*parseNum(it.boughtPrice)));
+
+      const update = () => {
+        const v = parseNum(qtyI.value)*parseNum(priceI.value);
+        subSpan.textContent = v>0?fmt(v):'—';
+        setState(s => ({
+          items: s.items.map(i => i.id===it.id
+            ? {...i, boughtQty: qtyI.value, boughtPrice: priceI.value}
+            : i)
+        }));
+      };
+      qtyI.addEventListener('input', update);
+      priceI.addEventListener('input', update);
+
+      const qGrp = el('div',{class:'input-group'}, el('span',{class:'input-lbl'},'Qtd'),   qtyI);
+      const pGrp = el('div',{class:'input-group'}, el('span',{class:'input-lbl'},'R$/un'), priceI);
+      const fields = el('div',{class:'bought-fields'}, qGrp, pGrp, subSpan);
+
+      const inner = el('div',{class:'shop-row-inner'},
+        el('div',{class:'shop-row-top'}, dot, info),
+        fields
+      );
+      row.append(inner);
+      extraCard.append(row);
+    });
+    wrap.append(extraCard);
+  } else if (!state.showExtraForm) {
+    wrap.append(el('div',{class:'empty', style:'padding:14px 0;font-size:13px;'}, 'Nenhum extra ainda'));
+  }
+
+  wrap.append(el('button',{class:'back-btn', onClick:()=>setState({mode:'plan'})}, '← Voltar à lista'));
+
+  // Floating total bar
+  const planBought = planned.filter(i=>i.bought).reduce((s,i)=>s+parseNum(i.boughtQty)*parseNum(i.boughtPrice),0);
+  const extTotal   = extras.reduce((s,i)=>s+parseNum(i.boughtQty)*parseNum(i.boughtPrice),0);
+
+  const miniBar = el('div',{class:'float-progress-mini-bar'});
+  miniBar.style.width = progress + '%';
+
+  const subLine = [];
+  if (planBought > 0) subLine.push(`lista ${fmt(planBought)}`);
+  if (extTotal   > 0) subLine.push(`extras ${fmt(extTotal)}`);
+
+  const floatBar = el('div',{class:'float-total'},
+    el('div',{class:'float-total-inner'},
+      el('div',{class:'float-total-left'},
+        el('span',{class:'float-total-label'}, 'Total gasto'),
+        el('div',{class:'float-progress-mini'}, miniBar),
+        subLine.length > 0 ? el('span',{class:'float-total-sub'}, subLine.join(' · ')) : null
+      ),
+      el('span',{class:'float-total-amt'}, fmt(total))
+    )
+  );
+
+  // Append to body so it's truly fixed
+  const existing = document.querySelector('.float-total');
+  if (existing) existing.remove();
+  document.body.appendChild(floatBar);
+
+  return wrap;
+}
+
+// ─── RENDER ────────────────────────────────────────────────
+function render() {
+  const existing = document.querySelector('.float-total');
+  if (existing) existing.remove();
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  app.appendChild(state.mode === 'plan' ? planMode() : shopMode());
+}
+
+render();
+</script>
+</body>
+</html>
